@@ -1,0 +1,23 @@
+# Quick Deployment Commands
+
+# 1. Login to Vercel (if not logged in)
+vercel login
+
+# 2. Deploy to production
+vercel --prod
+
+# 3. After deployment, set environment variables in Vercel Dashboard
+# Go to: https://vercel.com/dashboard
+# → Your Project → Settings → Environment Variables
+# → Add all variables from your .env.local file
+
+# 4. Redeploy to apply environment variables
+vercel --prod
+
+# That's it! Your app is now live with automatic cron jobs!
+
+
+
+
+
+

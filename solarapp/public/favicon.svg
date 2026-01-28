@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="sunGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFA500;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="panelGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background Circle -->
+  <circle cx="50" cy="50" r="48" fill="#f5f7fa" />
+  
+  <!-- Sun -->
+  <circle cx="50" cy="30" r="15" fill="url(#sunGradient)" />
+  
+  <!-- Sun Rays -->
+  <line x1="50" y1="10" x2="50" y2="5" stroke="#FFD700" stroke-width="2" stroke-linecap="round"/>
+  <line x1="65" y1="16" x2="69" y2="12" stroke="#FFD700" stroke-width="2" stroke-linecap="round"/>
+  <line x1="70" y1="30" x2="75" y2="30" stroke="#FFD700" stroke-width="2" stroke-linecap="round"/>
+  <line x1="35" y1="16" x2="31" y2="12" stroke="#FFD700" stroke-width="2" stroke-linecap="round"/>
+  <line x1="30" y1="30" x2="25" y2="30" stroke="#FFD700" stroke-width="2" stroke-linecap="round"/>
+  
+  <!-- Solar Panel -->
+  <rect x="25" y="50" width="50" height="35" rx="3" fill="url(#panelGradient)" />
+  
+  <!-- Panel Grid Lines -->
+  <line x1="25" y1="67" x2="75" y2="67" stroke="#fff" stroke-width="1.5" opacity="0.3"/>
+  <line x1="41.5" y1="50" x2="41.5" y2="85" stroke="#fff" stroke-width="1.5" opacity="0.3"/>
+  <line x1="58.5" y1="50" x2="58.5" y2="85" stroke="#fff" stroke-width="1.5" opacity="0.3"/>
+  
+  <!-- Lightning Bolt (Energy) -->
+  <path d="M 53 58 L 47 70 L 52 70 L 48 78 L 56 66 L 51 66 Z" fill="#FFD700" opacity="0.9"/>
+</svg>
+
+
+
+
+
+
+
+
+
+

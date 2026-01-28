@@ -1,0 +1,19 @@
+/* Reset default styles for full dashboard layout */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.App {
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* Remove default body margin */
+body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}

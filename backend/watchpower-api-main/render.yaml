@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: analytixcoin
+    env: python
+    region: oregon
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn fastapi_app:app --host 0.0.0.0 --port $PORT --workers 1
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.8
+      - key: USERNAMES
+        sync: false
+      - key: PASSWORD
+        sync: false
+      - key: SERIAL_NUMBER
+        sync: false
+      - key: WIFI_PN
+        sync: false
+      - key: DEV_CODE
+        sync: false
+      - key: DEV_ADDR
+        sync: false
+      - key: EMAIL_HOST
+        value: smtp.gmail.com
+      - key: EMAIL_PORT
+        value: 587
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASSWORD
+        sync: false
+      - key: EMAIL_RECIPIENT
+        sync: false
+      - key: ALERT_EMAIL
+        sync: false
+

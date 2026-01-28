@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar Dashboard - Notification Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        
+        .status-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-icon {
+            font-size: 24px;
+        }
+        
+        .status-text {
+            font-size: 14px;
+        }
+        
+        .status-label {
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .status-value {
+            color: #333;
+            font-weight: 600;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+        }
+        
+        .test-section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 24px;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            flex: 1;
+            min-width: 200px;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-telegram {
+            background: linear-gradient(135deg, #0088cc, #00aced);
+            color: white;
+        }
+        
+        .btn-discord {
+            background: linear-gradient(135deg, #5865F2, #7289da);
+            color: white;
+        }
+        
+        .btn-email {
+            background: linear-gradient(135deg, #EA4335, #D93025);
+            color: white;
+        }
+        
+        .btn-refresh {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            display: block;
+        }
+        
+        .result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            display: block;
+        }
+        
+        .result.info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            display: block;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .note {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            color: #856404;
+        }
+        
+        .note strong {
+            color: #721c24;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #e9ecef;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌞 Solar Dashboard Notifications</h1>
+        <p class="subtitle">Test your notification services</p>
+        
+        <!-- Status Card -->
+        <div class="status-card">
+            <h3 style="margin-bottom: 15px;">📊 Configuration Status</h3>
+            <div class="status-grid" id="statusGrid">
+                <div class="status-item">
+                    <span class="status-icon">⏳</span>
+                    <div class="status-text">
+                        <div class="status-label">Loading...</div>
+                    </div>
+                </div>
+            </div>
+            <button class="btn btn-refresh" onclick="loadStatus()" style="margin-top: 15px; width: 200px;">
+                🔄 Refresh Status
+            </button>
+        </div>
+        
+        <!-- Test Telegram -->
+        <div class="test-section">
+            <h2>📱 Test Telegram</h2>
+            <div class="button-group">
+                <button class="btn btn-telegram" onclick="testTelegram()" id="btnTelegram">
+                    <span>📱 Send Telegram Test</span>
+                </button>
+            </div>
+            <div class="result" id="resultTelegram"></div>
+            <div class="note">
+                <strong>⚠️ Note:</strong> Telegram is blocked in Pakistan. You need a VPN to receive messages. 
+                Alternative: Use Discord (not blocked) or Email.
+            </div>
+        </div>
+        
+        <!-- Test Discord -->
+        <div class="test-section">
+            <h2>🎮 Test Discord</h2>
+            <div class="button-group">
+                <button class="btn btn-discord" onclick="testDiscord()" id="btnDiscord">
+                    <span>🎮 Send Discord Test</span>
+                </button>
+            </div>
+            <div class="result" id="resultDiscord"></div>
+            <div class="note">
+                <strong>✅ Recommended:</strong> Discord works in Pakistan without VPN! 
+                Setup guide: <code>DISCORD_SETUP_GUIDE.md</code>
+            </div>
+        </div>
+        
+        <!-- Test Email -->
+        <div class="test-section">
+            <h2>📧 Test Email</h2>
+            <div class="button-group">
+                <button class="btn btn-email" onclick="testEmail()" id="btnEmail">
+                    <span>📧 Send Email Test</span>
+                </button>
+            </div>
+            <div class="result" id="resultEmail"></div>
+        </div>
+        
+        <div class="footer">
+            <p>Solar Dashboard v2.0 | Backend: <span id="backendStatus">Checking...</span></p>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        
+        // Load status on page load
+        window.addEventListener('DOMContentLoaded', loadStatus);
+        
+        async function loadStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/notifications/status`);
+                const data = await response.json();
+                
+                document.getElementById('backendStatus').textContent = '✅ Connected';
+                document.getElementById('backendStatus').style.color = '#28a745';
+                
+                const statusHTML = `
+                    <div class="status-item">
+                        <span class="status-icon">📧</span>
+                        <div class="status-text">
+                            <div class="status-label">Email</div>
+                            <span class="status-badge ${data.email_configured ? 'badge-success' : 'badge-danger'}">
+                                ${data.email_configured ? '✅ Configured' : '❌ Not Configured'}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="status-item">
+                        <span class="status-icon">📱</span>
+                        <div class="status-text">
+                            <div class="status-label">Telegram</div>
+                            <span class="status-badge ${data.telegram_configured ? 'badge-success' : 'badge-danger'}">
+                                ${data.telegram_configured ? '✅ Configured' : '❌ Not Configured'}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="status-item">
+                        <span class="status-icon">🎮</span>
+                        <div class="status-text">
+                            <div class="status-label">Discord</div>
+                            <span class="status-badge ${data.discord_configured ? 'badge-success' : 'badge-danger'}">
+                                ${data.discord_configured ? '✅ Configured' : '❌ Not Configured'}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="status-item">
+                        <span class="status-icon">🔋</span>
+                        <div class="status-text">
+                            <div class="status-label">System</div>
+                            <span class="status-badge ${data.monitoring_active ? 'badge-success' : 'badge-danger'}">
+                                ${data.monitoring_active ? '✅ Online' : '❌ Offline'}
+                            </span>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('statusGrid').innerHTML = statusHTML;
+                
+            } catch (error) {
+                document.getElementById('backendStatus').textContent = '❌ Disconnected';
+                document.getElementById('backendStatus').style.color = '#dc3545';
+                document.getElementById('statusGrid').innerHTML = `
+                    <div class="status-item">
+                        <span class="status-icon">❌</span>
+                        <div class="status-text">
+                            <div class="status-label" style="color: #dc3545;">Backend not responding</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        async function testTelegram() {
+            const btn = document.getElementById('btnTelegram');
+            const result = document.getElementById('resultTelegram');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span> Sending...';
+            result.className = 'result';
+            
+            try {
+                const response = await fetch(`${API_BASE}/notifications/test-telegram`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    result.className = 'result success';
+                    result.innerHTML = `
+                        <strong>✅ Success!</strong><br>
+                        Telegram message sent to: ${data.recipient}<br>
+                        <small>Check your Telegram app (use VPN if needed)</small>
+                    `;
+                } else {
+                    result.className = 'result error';
+                    result.innerHTML = `
+                        <strong>❌ Failed</strong><br>
+                        ${data.message}<br>
+                        <small>Make sure Telegram bot is configured in .env file</small>
+                    `;
+                }
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = `
+                    <strong>❌ Error</strong><br>
+                    ${error.message}<br>
+                    <small>Check if backend is running</small>
+                `;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>📱 Send Telegram Test</span>';
+            }
+        }
+        
+        async function testDiscord() {
+            const btn = document.getElementById('btnDiscord');
+            const result = document.getElementById('resultDiscord');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span> Sending...';
+            result.className = 'result';
+            
+            try {
+                const response = await fetch(`${API_BASE}/notifications/test-discord`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    result.className = 'result success';
+                    result.innerHTML = `
+                        <strong>✅ Success!</strong><br>
+                        Discord message sent successfully!<br>
+                        <small>Check your Discord server/channel</small>
+                    `;
+                } else {
+                    result.className = 'result error';
+                    result.innerHTML = `
+                        <strong>❌ Failed</strong><br>
+                        ${data.message}<br>
+                        <small>Setup Discord webhook - see DISCORD_SETUP_GUIDE.md</small>
+                    `;
+                }
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = `
+                    <strong>❌ Error</strong><br>
+                    ${error.message}<br>
+                    <small>Check if backend is running</small>
+                `;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>🎮 Send Discord Test</span>';
+            }
+        }
+        
+        async function testEmail() {
+            const btn = document.getElementById('btnEmail');
+            const result = document.getElementById('resultEmail');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span> Sending...';
+            result.className = 'result';
+            
+            try {
+                const response = await fetch(`${API_BASE}/notifications/test-email`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    result.className = 'result success';
+                    result.innerHTML = `
+                        <strong>✅ Success!</strong><br>
+                        Email sent to: ${data.recipient}<br>
+                        <small>Check your inbox (and spam folder)</small>
+                    `;
+                } else {
+                    result.className = 'result error';
+                    result.innerHTML = `
+                        <strong>❌ Failed</strong><br>
+                        ${data.message}<br>
+                        <small>Check email configuration in .env file</small>
+                    `;
+                }
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = `
+                    <strong>❌ Error</strong><br>
+                    ${error.message}<br>
+                    <small>Check if backend is running</small>
+                `;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>📧 Send Email Test</span>';
+            }
+        }
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+

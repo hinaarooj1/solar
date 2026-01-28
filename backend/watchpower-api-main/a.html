@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Solar Stats</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        h2 {
+            text-align: center;
+        }
+        #date-picker {
+            margin-bottom: 15px;
+        }
+        #stats {
+            margin-bottom: 20px;
+        }
+        .center-loader {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100px;
+        }
+        #chart {
+            width: 100%;
+            max-width: 900px;
+            height: 450px;
+            margin: auto;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Solar Stats</h2>
+
+<div id="date-picker">
+    <label><b>Select Date: </b></label>
+    <input type="date" id="selectedDate">
+</div>
+
+<div id="stats">
+    <p><b>Total Production (PV):</b> <span id="total">0</span> kWh</p>
+    <p><b>Total Usage (Load):</b> <span id="loadTotal">0</span> kWh</p>
+</div>
+
+<div class="center-loader" id="loader">Loading...</div>
+<div id="chart"></div>
+
+<script>
+    const totalEl = document.getElementById('total');
+    const loadTotalEl = document.getElementById('loadTotal');
+    const loader = document.getElementById('loader');
+    const chartEl = document.getElementById('chart');
+    const dateInput = document.getElementById('selectedDate');
+
+    // Default date = today
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.value = today;
+
+    async function fetchData(date) {
+        loader.style.display = 'flex';
+        chartEl.style.display = 'none';
+        try {
+            const res = await fetch(`https://watchpower-api-main-1.onrender.com/stats?date=${date}`);
+            const data = await res.json();
+
+            if (data.success) {
+                const graphData = data.graph;
+                const labels = graphData.map(point => point.time);
+                const pvData = graphData.map(point => point.pv_power);
+                const loadData = graphData.map(point => point.load_power);
+
+                // Calculate totals (~5 min interval)
+                let pvSum = 0, loadSum = 0;
+                const intervalHours = 5 / 60;
+                graphData.forEach(p => {
+                    pvSum += p.pv_power * intervalHours;
+                    loadSum += p.load_power * intervalHours;
+                });
+                totalEl.textContent = (pvSum / 1000).toFixed(2);
+                loadTotalEl.textContent = (loadSum / 1000).toFixed(2);
+
+                renderChart(labels, pvData, loadData);
+            } else {
+                totalEl.textContent = '0';
+                loadTotalEl.textContent = '0';
+                chartEl.innerHTML = '';
+            }
+        } catch (err) {
+            console.error("Error fetching API:", err);
+        } finally {
+            loader.style.display = 'none';
+            chartEl.style.display = 'block';
+        }
+    }
+
+    function renderChart(labels, pvData, loadData) {
+        const tracePV = {
+            x: labels,
+            y: pvData,
+            type: 'scatter',
+            mode: 'lines',
+            name: 'PV Power (W)',
+            line: { color: '#82ca9d', width: 2 },
+            fill: 'tozeroy',
+            fillcolor: 'rgba(130, 202, 157, 0.3)'
+        };
+
+        const traceLoad = {
+            x: labels,
+            y: loadData,
+            type: 'scatter',
+            mode: 'lines',
+            name: 'Load Power (W)',
+            line: { color: '#8884d8', width: 2 },
+            fill: 'tozeroy',
+            fillcolor: 'rgba(136, 132, 216, 0.3)'
+        };
+
+        const layout = {
+            margin: { t: 50, r: 30, l: 50, b: 50 },
+            hovermode: 'x unified',
+            xaxis: { title: 'Time' },
+            yaxis: { title: 'Power (W)' },
+            legend: { orientation: 'h', x: 0.5, xanchor: 'center', y: 1.1 }
+        };
+
+        Plotly.newPlot(chartEl, [tracePV, traceLoad], layout, { responsive: true });
+    }
+
+    // Initial fetch
+    fetchData(today);
+
+    // Auto refresh every 30 sec
+    setInterval(() => fetchData(dateInput.value), 300000);
+
+    // On date change
+    dateInput.addEventListener('change', () => fetchData(dateInput.value));
+</script>
+
+</body>
+</html>

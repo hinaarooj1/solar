@@ -1,0 +1,324 @@
+'use client';
+
+import React, { useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import {
+    Drawer,
+    AppBar,
+    Toolbar,
+    Typography,
+    Box,
+    CssBaseline,
+    useTheme,
+    useMediaQuery,
+    IconButton,
+    styled,
+    Popover,
+    Tooltip,
+    createTheme,
+    ThemeProvider,
+    Button
+} from "@mui/material";
+import {
+    Menu as MenuIcon,
+    Dashboard as DashboardIcon,
+    BarChart as BarChartIcon,
+    SolarPower as SolarIcon,
+    Brightness4,
+    Brightness7,
+    Palette,
+    Settings
+} from "@mui/icons-material";
+
+const drawerWidth = 280;
+
+const Main = styled("main", { shouldForwardProp: (prop) => prop !== "open" })<{ open?: boolean }>(
+    ({ theme, open }) => ({
+        flexGrow: 1,
+        padding: theme.spacing(2),
+        [theme.breakpoints.up('sm')]: {
+            padding: theme.spacing(3),
+        },
+        transition: theme.transitions.create("margin", {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.leavingScreen,
+        }),
+        marginLeft: 0,
+        [theme.breakpoints.up('md')]: {
+            marginLeft: open ? 0 : `-${drawerWidth}px`,
+        },
+        ...(open && {
+            transition: theme.transitions.create("margin", {
+                easing: theme.transitions.easing.easeOut,
+                duration: theme.transitions.duration.enteringScreen,
+            }),
+            [theme.breakpoints.up('md')]: {
+                marginLeft: 0,
+            },
+        }),
+    })
+);
+
+const AppBarStyled = styled(AppBar, {
+    shouldForwardProp: (prop) => prop !== "open",
+})<{ open?: boolean }>(({ theme, open }) => ({
+    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+    backdropFilter: "blur(10px)",
+    boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.37)",
+    transition: theme.transitions.create(["margin", "width"], {
+        easing: theme.transitions.easing.sharp,
+        duration: theme.transitions.duration.leavingScreen,
+    }),
+    ...(open && {
+        width: `calc(100% - ${drawerWidth}px)`,
+        marginLeft: `${drawerWidth}px`,
+        transition: theme.transitions.create(["margin", "width"], {
+            easing: theme.transitions.easing.easeOut,
+            duration: theme.transitions.duration.enteringScreen,
+        }),
+    }),
+}));
+
+const DrawerHeader = styled("div")(({ theme }) => ({
+    display: "flex",
+    alignItems: "center",
+    padding: theme.spacing(0, 1),
+    ...theme.mixins.toolbar,
+    justifyContent: "flex-end",
+}));
+
+// Theme colors
+export const themeColors = {
+    purple: { primary: '#667eea', secondary: '#764ba2' },
+    blue: { primary: '#4facfe', secondary: '#00f2fe' },
+    green: { primary: '#11998e', secondary: '#38ef7d' },
+    orange: { primary: '#fa709a', secondary: '#fee140' }
+};
+
+interface DashboardLayoutProps {
+    children: React.ReactNode;
+}
+
+const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+    const [mobileOpen, setMobileOpen] = useState(false);
+    const [darkMode, setDarkMode] = useState(false);
+    const [themeColor, setThemeColor] = useState('purple');
+    const [themeAnchorEl, setThemeAnchorEl] = useState<HTMLElement | null>(null);
+    
+    const router = useRouter();
+    const pathname = usePathname();
+
+    const handleDrawerToggle = () => {
+        setMobileOpen(!mobileOpen);
+    };
+
+    const menuItems = [
+        { text: "Daily Stats", icon: <DashboardIcon />, path: "/" },
+        { text: "Monthly Stats", icon: <BarChartIcon />, path: "/monthly" },
+        { text: "System Controls", icon: <Settings />, path: "/controls" },
+    ];
+
+    const customTheme = createTheme({
+        palette: {
+            mode: darkMode ? 'dark' : 'light',
+            primary: {
+                main: themeColors[themeColor as keyof typeof themeColors].primary,
+            },
+            secondary: {
+                main: themeColors[themeColor as keyof typeof themeColors].secondary,
+            },
+            background: {
+                default: darkMode ? '#121212' : '#f5f7fa',
+                paper: darkMode ? '#1e1e1e' : '#ffffff',
+            },
+        },
+    });
+
+    return (
+        <ThemeProvider theme={customTheme}>
+            <Box sx={{ display: "flex", bgcolor: 'background.default', minHeight: '100vh' }}>
+            <CssBaseline />
+            <AppBarStyled position="fixed" open={mobileOpen}>
+                <Toolbar>
+                    <IconButton
+                        color="inherit"
+                        aria-label="open drawer"
+                        onClick={handleDrawerToggle}
+                        edge="start"
+                        sx={{ mr: 2, ...(mobileOpen && { display: "none" }) }}
+                    >
+                        <MenuIcon />
+                    </IconButton>
+                    <Typography 
+                        variant="h6" 
+                        noWrap 
+                        component="div" 
+                        sx={{ 
+                            flexGrow: 1,
+                            fontSize: { xs: '1rem', sm: '1.25rem' }
+                        }}
+                    >
+                        Solar Power Dashboard
+                    </Typography>
+                    
+                    {/* Dark Mode Toggle */}
+                    <Tooltip title={darkMode ? "Light Mode" : "Dark Mode"}>
+                        <IconButton onClick={() => setDarkMode(!darkMode)} color="inherit">
+                            {darkMode ? <Brightness7 /> : <Brightness4 />}
+                        </IconButton>
+                    </Tooltip>
+                    
+                    {/* Theme Color Selector */}
+                    <Tooltip title="Change Theme">
+                        <IconButton 
+                            onClick={(e) => setThemeAnchorEl(e.currentTarget)} 
+                            color="inherit"
+                        >
+                            <Palette />
+                        </IconButton>
+                    </Tooltip>
+                    
+                    <Popover
+                        open={Boolean(themeAnchorEl)}
+                        anchorEl={themeAnchorEl}
+                        onClose={() => setThemeAnchorEl(null)}
+                        anchorOrigin={{
+                            vertical: 'bottom',
+                            horizontal: 'right',
+                        }}
+                        transformOrigin={{
+                            vertical: 'top',
+                            horizontal: 'right',
+                        }}
+                    >
+                        <Box sx={{ p: 2 }}>
+                            <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
+                                Select Theme Color
+                            </Typography>
+                            <Box sx={{ display: 'flex', gap: 1, flexDirection: 'column' }}>
+                                {Object.keys(themeColors).map((color) => (
+                                    <Button
+                                        key={color}
+                                        onClick={() => {
+                                            setThemeColor(color);
+                                            setThemeAnchorEl(null);
+                                        }}
+                                        variant={themeColor === color ? 'contained' : 'outlined'}
+                                        sx={{
+                                            background: themeColor === color 
+                                                ? `linear-gradient(135deg, ${themeColors[color as keyof typeof themeColors].primary} 0%, ${themeColors[color as keyof typeof themeColors].secondary} 100%)`
+                                                : 'transparent',
+                                            borderColor: themeColors[color as keyof typeof themeColors].primary,
+                                            color: themeColor === color ? 'white' : themeColors[color as keyof typeof themeColors].primary,
+                                            '&:hover': {
+                                                background: `linear-gradient(135deg, ${themeColors[color as keyof typeof themeColors].primary} 0%, ${themeColors[color as keyof typeof themeColors].secondary} 100%)`,
+                                                color: 'white'
+                                            }
+                                        }}
+                                    >
+                                        {color.charAt(0).toUpperCase() + color.slice(1)}
+                                    </Button>
+                                ))}
+                            </Box>
+                        </Box>
+                    </Popover>
+                </Toolbar>
+            </AppBarStyled>
+
+            <Drawer
+                sx={{
+                    width: drawerWidth,
+                    flexShrink: 0,
+                    "& .MuiDrawer-paper": {
+                        width: drawerWidth,
+                        boxSizing: "border-box",
+                        background: "linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
+                        color: "white",
+                        borderRight: "1px solid rgba(255, 255, 255, 0.1)",
+                    },
+                }}
+                variant={isMobile ? "temporary" : "persistent"}
+                anchor="left"
+                open={mobileOpen}
+                onClose={handleDrawerToggle}
+            >
+                <IconButton
+                    color="inherit"
+                    aria-label="close drawer"
+                    onClick={handleDrawerToggle}
+                    edge="start"
+                    sx={{ ml: "auto", mr: 2, mt: 1 }}
+                >
+                    <MenuIcon />
+                </IconButton>
+                <Box sx={{ p: 3, textAlign: "center", mb: 2 }}>
+                    <Box sx={{ 
+                        display: 'inline-flex',
+                        p: 2,
+                        borderRadius: '50%',
+                        background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                        mb: 2,
+                        boxShadow: '0 8px 32px rgba(240, 147, 251, 0.3)'
+                    }}>
+                        <SolarIcon sx={{ fontSize: 48, color: 'white' }} />
+                    </Box>
+                    <Typography variant="h5" gutterBottom sx={{ fontWeight: 700 }}>
+                        Solar Analytics
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.7, fontSize: '0.875rem' }}>
+                        Monitor your solar power system
+                    </Typography>
+                </Box>
+
+                <Box sx={{ px: 2, pb: 2 }}>
+                    {menuItems.map((item) => (
+                        <Box
+                            key={item.text}
+                            onClick={() => {
+                                router.push(item.path);
+                                if (isMobile) setMobileOpen(false);
+                            }}
+                            sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                p: 2,
+                                mb: 1,
+                                borderRadius: 3,
+                                cursor: "pointer",
+                                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                                background: pathname === item.path 
+                                    ? "linear-gradient(135deg, rgba(102, 126, 234, 0.4) 0%, rgba(118, 75, 162, 0.4) 100%)"
+                                    : "transparent",
+                                border: pathname === item.path 
+                                    ? "1px solid rgba(255, 255, 255, 0.2)"
+                                    : "1px solid transparent",
+                                "&:hover": {
+                                    background: "linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%)",
+                                    transform: "translateX(5px)",
+                                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                                },
+                            }}
+                        >
+                            <Box sx={{ mr: 2, opacity: 0.9 }}>{item.icon}</Box>
+                            <Typography variant="body1" sx={{ fontWeight: pathname === item.path ? 600 : 400 }}>
+                                {item.text}
+                            </Typography>
+                        </Box>
+                    ))}
+                </Box>
+            </Drawer>
+
+            <Main open={mobileOpen}>
+                <DrawerHeader />
+                <Box sx={{ p: { xs: 1, md: 3 } }}>
+                    {children}
+                </Box>
+            </Main>
+        </Box>
+        </ThemeProvider>
+    );
+};
+
+export default DashboardLayout;
