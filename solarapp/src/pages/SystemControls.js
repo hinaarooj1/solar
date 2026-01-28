@@ -47,6 +47,7 @@ const SystemControls = ({ darkMode, themeColor, themeColors }) => {
         fetchSystemHealth();
         fetchSystemSettings();
         fetchNotificationStatus();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchSystemHealth = async (forceRefresh = false) => {

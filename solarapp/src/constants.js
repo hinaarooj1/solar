@@ -53,10 +53,12 @@ export const CONFIG = {
     EXPECTED_DATA_POINTS_PER_DAY: 288
 };
 
-export default {
+const constants = {
     API_BASE_URL,
     API_ENDPOINTS,
     CONFIG
 };
+
+export default constants;
 
 
