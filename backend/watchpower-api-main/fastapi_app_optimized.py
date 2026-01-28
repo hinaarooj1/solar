@@ -173,7 +173,9 @@ allowed_origins = [
     "http://localhost:3001",
     "http://localhost:3002",
     "https://solarbyahmar.vercel.app",
+    "https://solarbyahmarj.vercel.app",
     "https://www.solarbyahmar.vercel.app",
+    "https://www.solarbyahmarj.vercel.app",
 ]
 
 app.add_middleware(
