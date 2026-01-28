@@ -46,7 +46,7 @@ import {
     Warning
 } from "@mui/icons-material";
 import { toast } from "react-toastify";
-import { API_ENDPOINTS, CONFIG } from "../constants";
+import { API_ENDPOINTS, CONFIG } from "../constants.js";
 
 const DailyStats = ({ darkMode, themeColor, themeColors }) => {
     const [data, setData] = useState([]);

@@ -27,7 +27,7 @@ import {
     Assessment
 } from '@mui/icons-material';
 import { toast } from 'react-toastify';
-import { API_ENDPOINTS } from '../constants';
+import { API_ENDPOINTS } from '../constants.js';
 
 const SystemControls = ({ darkMode, themeColor, themeColors }) => {
     const [systemHealth, setSystemHealth] = useState(null);
