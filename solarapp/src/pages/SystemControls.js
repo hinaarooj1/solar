@@ -11,9 +11,7 @@ import {
     Divider,
     CircularProgress,
     IconButton,
-    Tooltip,
-    TextField,
-    Button
+    Tooltip
 } from '@mui/material';
 import {
     PowerSettingsNew,
@@ -27,7 +25,7 @@ import {
     Assessment
 } from '@mui/icons-material';
 import { toast } from 'react-toastify';
-import { API_ENDPOINTS } from '../constants.js';
+import { API_ENDPOINTS } from '../constants';
 
 const SystemControls = ({ darkMode, themeColor, themeColors }) => {
     const [systemHealth, setSystemHealth] = useState(null);
@@ -38,8 +36,6 @@ const SystemControls = ({ darkMode, themeColor, themeColors }) => {
     const [isLoadingSettings, setIsLoadingSettings] = useState(true);
     
     const [notificationStatus, setNotificationStatus] = useState(null);
-    const [notificationEmail, setNotificationEmail] = useState('');
-    const [isSavingEmail, setIsSavingEmail] = useState(false);
     
     const currentTheme = themeColors[themeColor];
 
@@ -47,7 +43,6 @@ const SystemControls = ({ darkMode, themeColor, themeColors }) => {
         fetchSystemHealth();
         fetchSystemSettings();
         fetchNotificationStatus();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchSystemHealth = async (forceRefresh = false) => {
@@ -99,7 +94,6 @@ const SystemControls = ({ darkMode, themeColor, themeColors }) => {
             const response = await axios.get(API_ENDPOINTS.notificationStatus());
             if (response.data.success) {
                 setNotificationStatus(response.data);
-                setNotificationEmail(response.data.notification_email || '');
             }
         } catch (error) {
             console.error('Error fetching notification status:', error);
@@ -142,39 +136,25 @@ const SystemControls = ({ darkMode, themeColor, themeColors }) => {
         try {
             toast.info('Fetching yesterday\'s data and sending summary...', { autoClose: 2000 });
             
-            const response = await axios.post(API_ENDPOINTS.testDailySummary());
+            const response = await axios.get(API_ENDPOINTS.testDailySummary());
             
             if (response.data.success) {
-                toast.success(response.data.message || 'Daily summary email sent!');
+                const { data, channels } = response.data;
+                
+                toast.success(
+                    `Daily Summary Sent!\n📊 Production: ${data.production_kwh} kWh\n⚡ Usage: ${data.load_kwh} kWh\n🔋 Grid: ${data.grid_contribution_kwh} kWh`,
+                    { autoClose: 5000 }
+                );
+                
+                if (channels.email?.success) toast.success('✅ Email sent!');
+                if (channels.telegram?.success) toast.success('✅ Telegram sent!');
+                if (channels.discord?.success) toast.success('✅ Discord sent!');
+                
             } else {
                 toast.error(response.data.message || 'Failed to send daily summary');
             }
         } catch (error) {
             toast.error('Error sending daily summary: ' + error.message);
-        }
-    };
-
-    const handleSaveNotificationEmail = async () => {
-        if (!notificationEmail) {
-            toast.error('Please enter an email address');
-            return;
-        }
-        try {
-            setIsSavingEmail(true);
-            await axios.put(API_ENDPOINTS.notificationEmail(), {
-                notification_email: notificationEmail
-            });
-            toast.success('Notification email updated');
-            fetchNotificationStatus();
-        } catch (error) {
-            const message =
-                error.response?.data?.detail ||
-                error.response?.data?.message ||
-                error.message ||
-                'Unable to update email';
-            toast.error(message);
-        } finally {
-            setIsSavingEmail(false);
         }
     };
 
@@ -596,34 +576,26 @@ const SystemControls = ({ darkMode, themeColor, themeColors }) => {
                                         <>
                                             <Box sx={{ mb: 2 }}>
                                                 <Chip
-                                                icon={notificationStatus.email_configured ? <CheckCircle /> : <Warning />}
-                                                label={notificationStatus.email_configured ? 'Configured' : 'Not Configured'}
-                                                color={notificationStatus.email_configured ? 'success' : 'error'}
+                                                    icon={notificationStatus.email_configured ? <CheckCircle /> : <Warning />}
+                                                    label={notificationStatus.email_configured ? 'Configured' : 'Not Configured'}
+                                                    color={notificationStatus.email_configured ? 'success' : 'error'}
                                                     sx={{ mb: 1 }}
                                                 />
-                                            <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                                                {notificationStatus.notification_email
-                                                    ? `📧 ${notificationStatus.notification_email}`
-                                                    : 'Add an email address to receive alerts.'}
-                                            </Typography>
-                                        </Box>
-
-                                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 2 }}>
-                                            <TextField
-                                                label="Notification Email"
-                                                type="email"
-                                                value={notificationEmail}
-                                                onChange={(e) => setNotificationEmail(e.target.value)}
-                                                fullWidth
-                                            />
-                                            <Button
-                                                variant="contained"
-                                                onClick={handleSaveNotificationEmail}
-                                                disabled={isSavingEmail}
-                                                sx={{ textTransform: 'none', fontWeight: 600 }}
-                                            >
-                                                {isSavingEmail ? 'Saving...' : 'Save Email'}
-                                            </Button>
+                                                {notificationStatus.email_configured && (
+                                                    <>
+                                                        <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                                                            📧 {notificationStatus.recipient_email}
+                                                        </Typography>
+                                                        <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                                                            🔔 Monitoring: {notificationStatus.monitoring_active ? 'Active' : 'Inactive'}
+                                                        </Typography>
+                                                        {notificationStatus.is_load_shedding && (
+                                                            <Alert severity="warning" sx={{ mt: 1 }}>
+                                                                ⚡ Load shedding detected
+                                                            </Alert>
+                                                        )}
+                                                    </>
+                                                )}
                                             </Box>
                                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                                                 <IconButton

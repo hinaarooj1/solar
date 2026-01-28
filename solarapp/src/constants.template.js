@@ -15,25 +15,28 @@ export const API_BASE_URL = API_URLS[API_MODE];
 
 // API Endpoints
 export const API_ENDPOINTS = {
-    // Auth
-    login: () => `${API_BASE_URL}/auth/login`,
-    authMe: () => `${API_BASE_URL}/auth/me`,
-    notificationEmail: () => `${API_BASE_URL}/user/notification-email`,
-    
     // Get daily stats for a specific date
     getDailyStats: (date) => `${API_BASE_URL}/stats?date=${date}`,
     
     // Get stats for a date range
     getStatsRange: (fromDate, toDate) => `${API_BASE_URL}/stats-range?from_date=${fromDate}&to_date=${toDate}`,
     
-    // System Health & Monitoring
+    // NEW: System Control Endpoints
+    controlGridFeed: () => `${API_BASE_URL}/control/grid-feed`,
+    controlOutputPriority: () => `${API_BASE_URL}/control/output-priority`,
+    controlLCDAutoReturn: () => `${API_BASE_URL}/control/lcd-auto-return`,
+    controlSystemSettings: () => `${API_BASE_URL}/control/system-settings`,
+    
+    // NEW: System Health & Monitoring
     systemHealth: () => `${API_BASE_URL}/system/health`,
     systemSettings: () => `${API_BASE_URL}/system/settings/current`,
     
-    // Notifications
+    // NEW: Notifications
     notificationTest: () => `${API_BASE_URL}/notifications/test`,
     notificationStatus: () => `${API_BASE_URL}/notifications/status`,
-    testDailySummary: () => `${API_BASE_URL}/notifications/test-daily-summary`,
+    
+    // NEW: Alerts Configuration
+    alertsConfig: () => `${API_BASE_URL}/alerts/config`
 };
 
 // Configuration

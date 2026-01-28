@@ -25,8 +25,7 @@ import {
     Brightness4,
     Brightness7,
     Palette,
-    Settings,
-    Logout
+    Settings
 } from "@mui/icons-material";
 import './Table.css';
 import DailyStats from './pages/DailyStats';
@@ -90,7 +89,7 @@ const DrawerHeader = styled("div")(({ theme }) => ({
     justifyContent: "flex-end",
 }));
 
-const Dashboard = ({ onLogout }) => {
+const Dashboard = () => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down("md"));
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -224,14 +223,6 @@ const Dashboard = ({ onLogout }) => {
                             </Box>
                         </Box>
                     </Popover>
-
-                    {onLogout && (
-                        <Tooltip title="Logout">
-                            <IconButton color="inherit" onClick={onLogout}>
-                                <Logout />
-                            </IconButton>
-                        </Tooltip>
-                    )}
                 </Toolbar>
             </AppBarStyled>
 

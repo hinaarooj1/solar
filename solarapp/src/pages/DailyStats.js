@@ -19,6 +19,7 @@ import {
     Paper,
     InputAdornment,
     TextField,
+    LinearProgress,
     Fade,
     Chip,
     Tooltip,
@@ -40,10 +41,12 @@ import {
     FullscreenExit,
     PlayArrow,
     Pause,
-    Today as TodayIcon
+    Today as TodayIcon,
+    CheckCircle,
+    Warning
 } from "@mui/icons-material";
 import { toast } from "react-toastify";
-import { API_ENDPOINTS, CONFIG } from "../constants.js";
+import { API_ENDPOINTS, CONFIG } from "../constants";
 
 const DailyStats = ({ darkMode, themeColor, themeColors }) => {
     const [data, setData] = useState([]);
@@ -245,7 +248,6 @@ const DailyStats = ({ darkMode, themeColor, themeColors }) => {
         return () => {
             if (interval) clearInterval(interval);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedDate, isLiveMode]);
 
     const CustomTooltip = ({ active, payload, label }) => {

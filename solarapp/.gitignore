@@ -5,7 +5,9 @@
 /.pnp
 .pnp.js
 
- 
+# constants (API configuration)
+/src/constants.js
+
 # testing
 /coverage
 
