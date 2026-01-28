@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field
 from typing import Optional, Literal
 from datetime import datetime
 
@@ -59,6 +59,57 @@ class SystemSettings(BaseModel):
     )
 
 
+class AlertConfiguration(BaseModel):
+    """Model for alert configuration"""
+    grid_feed_reminder_enabled: bool = Field(
+        default=True,
+        description="Enable periodic grid feed reminders"
+    )
+    grid_feed_interval_hours: int = Field(
+        default=6,
+        ge=1,
+        le=24,
+        description="Hours between grid feed reminders"
+    )
+    load_shedding_alerts_enabled: bool = Field(
+        default=True,
+        description="Enable load shedding detection alerts"
+    )
+    load_shedding_voltage_threshold: float = Field(
+        default=180.0,
+        ge=100.0,
+        le=240.0,
+        description="Voltage threshold for load shedding detection (V)"
+    )
+    system_offline_alerts_enabled: bool = Field(
+        default=True,
+        description="Enable system offline alerts"
+    )
+    system_offline_threshold_minutes: int = Field(
+        default=10,
+        ge=5,
+        le=60,
+        description="Minutes of no data before offline alert"
+    )
+    low_production_alerts_enabled: bool = Field(
+        default=False,
+        description="Enable low production warnings"
+    )
+    low_production_threshold_watts: float = Field(
+        default=500.0,
+        ge=0.0,
+        description="Minimum expected production during peak hours (W)"
+    )
+    low_production_check_hours: str = Field(
+        default="11:00-15:00",
+        description="Time range for production check (HH:MM-HH:MM)"
+    )
+    notification_email: str = Field(
+        ...,
+        description="Email address for notifications"
+    )
+
+
 class SystemHealthResponse(BaseModel):
     """Model for system health response"""
     timestamp: datetime
@@ -92,39 +143,18 @@ class NotificationTestRequest(BaseModel):
     )
 
 
-class AuthLoginRequest(BaseModel):
-    username: str
-    password: str
-    secret: str
-
-
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-
-
-class AuthenticatedUser(BaseModel):
-    username: str
-    notification_email: Optional[EmailStr] = None
-
-
-class NotificationEmailUpdate(BaseModel):
-    notification_email: Optional[EmailStr] = Field(
-        default=None,
-        description="Email address that should receive alerts. Null disables alerts.",
+class ModeAlertRequest(BaseModel):
+    """Model for system mode change alerts"""
+    mode: Literal["Battery Mode", "Line Mode", "Standby Mode"] = Field(
+        ...,
+        description="System mode that triggered the alert"
     )
-
-
-class AdminUserCreateRequest(BaseModel):
-    username: str
-    password: str
-    secret: str
-    watchpower_username: str
-    watchpower_password: str
-    serial_number: str
-    wifi_pn: str
-    dev_code: int
-    dev_addr: int
-    notification_email: Optional[EmailStr] = None
-    is_active: bool = True
+    message: str = Field(
+        ...,
+        description="Alert message describing the mode change"
+    )
+    timestamp: datetime = Field(
+        ...,
+        description="Timestamp when the mode change occurred"
+    )
 
