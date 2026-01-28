@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-from fastapi import FastAPI, Query, HTTPException, BackgroundTasks
+from fastapi import FastAPI, Query, HTTPException, BackgroundTasks, Body
 import os 
 from fastapi.middleware.cors import CORSMiddleware
 import datetime
@@ -546,14 +546,42 @@ def stats_range(from_date: str = Query(...), to_date: str = Query(...)):
             current = start
             while current <= end:
                 try:
-                    data = api_manager.handle_api_call(
-                        api_manager.wp.get_daily_data,
-                        day=current,
-                        serial_number=SERIAL_NUMBER,
-                        wifi_pn=WIFI_PN,
-                        dev_code=DEV_CODE,
-                        dev_addr=DEV_ADDR
-                    )
+                    # Retry logic with exponential backoff
+                    max_retries = 3
+                    retry_delay = 1.0  # seconds
+                    data = None
+                    last_error = None
+                    
+                    for attempt in range(max_retries):
+                        try:
+                            data = api_manager.handle_api_call(
+                                api_manager.wp.get_daily_data,
+                                day=current,
+                                serial_number=SERIAL_NUMBER,
+                                wifi_pn=WIFI_PN,
+                                dev_code=DEV_CODE,
+                                dev_addr=DEV_ADDR
+                            )
+                            break  # Success, exit retry loop
+                        except Exception as e:
+                            last_error = e
+                            error_str = str(e).lower()
+                            
+                            # Don't retry on certain errors (like no data available)
+                            if "no record" in error_str or "err_no_record" in error_str or "err 12" in error_str:
+                                raise e
+                            
+                            # If this is the last attempt, raise the error
+                            if attempt == max_retries - 1:
+                                raise e
+                            
+                            # Exponential backoff: 1s, 2s, 4s
+                            delay = retry_delay * (2 ** attempt)
+                            logger.warning(f"⚠️ Retry attempt {attempt + 1}/{max_retries} after {delay}s for {current}: {str(e)}")
+                            time.sleep(delay)
+                    
+                    if data is None:
+                        raise last_error if last_error else Exception("Failed to fetch data after retries")
 
                     rows = data.get("dat", {}).get("row", [])
                     pv_wh = 0
@@ -609,6 +637,135 @@ def stats_range(from_date: str = Query(...), to_date: str = Query(...)):
             yield json.dumps({"success": False, "error": str(e)}) + "\n"
 
     return StreamingResponse(generate_stats(), media_type="application/json")
+
+
+@app.post("/stats-range/refetch")
+def refetch_missing_dates(request: dict = Body(...)):
+    """Refetch specific dates with retry logic"""
+    
+    def generate_refetch():
+        try:
+            dates = request.get("dates", [])
+            if not dates or len(dates) == 0:
+                yield json.dumps({"success": False, "error": "dates list is required"}) + "\n"
+                return
+
+            total_prod_wh = 0
+            total_load_wh = 0
+            interval_hours = 5 / 60
+
+            for i, date_str in enumerate(dates):
+                try:
+                    current = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+                    
+                    # Retry logic with exponential backoff
+                    max_retries = 3
+                    retry_delay = 1.0
+                    data = None
+                    last_error = None
+                    
+                    for attempt in range(max_retries):
+                        try:
+                            data = api_manager.handle_api_call(
+                                api_manager.wp.get_daily_data,
+                                day=current,
+                                serial_number=SERIAL_NUMBER,
+                                wifi_pn=WIFI_PN,
+                                dev_code=DEV_CODE,
+                                dev_addr=DEV_ADDR
+                            )
+                            break
+                        except Exception as e:
+                            last_error = e
+                            error_str = str(e).lower()
+                            
+                            if "no record" in error_str or "err_no_record" in error_str or "err 12" in error_str:
+                                raise e
+                            
+                            if attempt == max_retries - 1:
+                                raise e
+                            
+                            delay = retry_delay * (2 ** attempt)
+                            logger.warning(f"⚠️ Retry attempt {attempt + 1}/{max_retries} after {delay}s for {date_str}: {str(e)}")
+                            time.sleep(delay)
+                    
+                    if data is None:
+                        raise last_error if last_error else Exception("Failed to fetch data after retries")
+
+                    rows = data.get("dat", {}).get("row", [])
+                    
+                    if len(rows) == 0:
+                        daily_data = {
+                            "date": date_str,
+                            "production_kwh": None,
+                            "load_kwh": None,
+                            "success": False,
+                            "error": "No data available"
+                        }
+                    else:
+                        pv_wh = 0
+                        load_wh = 0
+                        has_valid_data = False
+
+                        for rec in rows:
+                            fields = rec.get("field", [])
+                            if len(fields) < 22:
+                                continue
+
+                            timestamp = fields[1]
+                            if not timestamp.startswith(date_str):
+                                continue
+
+                            pv_power = float(fields[11]) if fields[11] else 0.0
+                            load_power = float(fields[21]) if fields[21] else 0.0
+                            pv_wh += pv_power * interval_hours
+                            load_wh += load_power * interval_hours
+                            has_valid_data = True
+
+                        if not has_valid_data:
+                            daily_data = {
+                                "date": date_str,
+                                "production_kwh": None,
+                                "load_kwh": None,
+                                "success": False,
+                                "error": "No valid records found"
+                            }
+                        else:
+                            total_prod_wh += pv_wh
+                            total_load_wh += load_wh
+                            daily_data = {
+                                "date": date_str,
+                                "production_kwh": round(pv_wh / 1000, 2),
+                                "load_kwh": round(load_wh / 1000, 2),
+                                "success": True
+                            }
+
+                except Exception as e:
+                    logger.error(f"❌ Error refetching {date_str}: {str(e)}")
+                    daily_data = {
+                        "date": date_str,
+                        "production_kwh": None,
+                        "load_kwh": None,
+                        "success": False,
+                        "error": str(e)
+                    }
+
+                # Yield progress update
+                progress = ((i + 1) / len(dates)) * 100
+                yield json.dumps({
+                    "success": True,
+                    "progress": round(progress, 2),
+                    "daily": daily_data,
+                    "completed": i + 1,
+                    "total": len(dates)
+                }) + "\n"
+
+        except Exception as e:
+            yield json.dumps({"success": False, "error": str(e)}) + "\n"
+
+    return StreamingResponse(generate_refetch(), media_type="application/json")
+
+
 
 
 # ============================================================================
@@ -1773,14 +1930,42 @@ def stats_range(from_date: str = Query(...), to_date: str = Query(...)):
             current = start
             while current <= end:
                 try:
-                    data = api_manager.handle_api_call(
-                        api_manager.wp.get_daily_data,
-                        day=current,
-                        serial_number=SERIAL_NUMBER,
-                        wifi_pn=WIFI_PN,
-                        dev_code=DEV_CODE,
-                        dev_addr=DEV_ADDR
-                    )
+                    # Retry logic with exponential backoff
+                    max_retries = 3
+                    retry_delay = 1.0  # seconds
+                    data = None
+                    last_error = None
+                    
+                    for attempt in range(max_retries):
+                        try:
+                            data = api_manager.handle_api_call(
+                                api_manager.wp.get_daily_data,
+                                day=current,
+                                serial_number=SERIAL_NUMBER,
+                                wifi_pn=WIFI_PN,
+                                dev_code=DEV_CODE,
+                                dev_addr=DEV_ADDR
+                            )
+                            break  # Success, exit retry loop
+                        except Exception as e:
+                            last_error = e
+                            error_str = str(e).lower()
+                            
+                            # Don't retry on certain errors (like no data available)
+                            if "no record" in error_str or "err_no_record" in error_str or "err 12" in error_str:
+                                raise e
+                            
+                            # If this is the last attempt, raise the error
+                            if attempt == max_retries - 1:
+                                raise e
+                            
+                            # Exponential backoff: 1s, 2s, 4s
+                            delay = retry_delay * (2 ** attempt)
+                            logger.warning(f"⚠️ Retry attempt {attempt + 1}/{max_retries} after {delay}s for {current}: {str(e)}")
+                            time.sleep(delay)
+                    
+                    if data is None:
+                        raise last_error if last_error else Exception("Failed to fetch data after retries")
 
                     rows = data.get("dat", {}).get("row", [])
                     pv_wh = 0

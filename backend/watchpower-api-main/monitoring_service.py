@@ -828,8 +828,8 @@ class MonitoringService:
                     logger.info("✅ Periodic monitoring cycle completed successfully")
                     
                     # Wait for next check (with shutdown check)
-                    logger.info("⏳ Waiting 5 minutes for next check...")
-                    for i in range(300):  # 5 minutes = 300 seconds
+                    logger.info("⏳ Waiting 6.67 minutes for next check...")
+                    for i in range(400):  #  minutes =  seconds
                         if self.shutdown_requested:
                             logger.info("🛑 Shutdown requested, stopping monitoring")
                             break
