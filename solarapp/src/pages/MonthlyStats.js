@@ -31,7 +31,7 @@ import {
     BatteryChargingFull
 } from "@mui/icons-material";
 import { toast } from "react-toastify";
-import { API_ENDPOINTS } from "../constants";
+import { API_ENDPOINTS } from "../constants.js";
 
 const MonthlyStats = ({ darkMode, themeColor, themeColors }) => {
     const today = new Date().toISOString().split("T")[0];
@@ -53,6 +53,8 @@ const MonthlyStats = ({ darkMode, themeColor, themeColors }) => {
     const [missingDates, setMissingDates] = useState([]);
     const [isError, setisError] = useState("");
     const [progress, setProgress] = useState(0);
+    const [isRefetching, setIsRefetching] = useState(false);
+    const [refetchProgress, setRefetchProgress] = useState(0);
     
     const currentTheme = themeColors[themeColor];
     
@@ -148,6 +150,10 @@ const MonthlyStats = ({ darkMode, themeColor, themeColors }) => {
             const nullDays = dailyData.filter(d => d.isNull).map(d => d.date);
             setMissingDates(nullDays);
 
+            console.log('✅ Fetch completed successfully');
+            console.log('📊 Daily data processed:', dailyData.length, 'days');
+            console.log('⚠️ Missing data for:', nullDays.length, 'days:', nullDays);
+
         } catch (err) {
             setisError(err)
             toast.error("Error fetching API")
@@ -161,6 +167,154 @@ const MonthlyStats = ({ darkMode, themeColor, themeColors }) => {
         } finally {
             setIsLoading(false);
             setProgress(0);
+        }
+    };
+
+    const refetchMissingDays = async () => {
+        if (missingDates.length === 0) {
+            toast.info('No missing dates to refetch');
+            return;
+        }
+
+        try {
+            setIsRefetching(true);
+            setRefetchProgress(0);
+            setisError("");
+
+            console.log('🔄 Refetching missing dates:', missingDates);
+
+            // Use fetch for streaming support
+            const response = await fetch(API_ENDPOINTS.refetchMissingDates(), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ dates: missingDates }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+
+            if (!reader) {
+                throw new Error('No response body reader available');
+            }
+
+            const refetchedData = [];
+            let buffer = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+
+                // Keep the last incomplete line in buffer
+                buffer = lines.pop() || '';
+
+                // Process complete lines
+                for (const line of lines) {
+                    if (line.trim()) {
+                        try {
+                            const data = JSON.parse(line);
+                            if (data.success) {
+                                if (data.progress !== undefined) {
+                                    setRefetchProgress(data.progress);
+                                }
+                                if (data.daily) {
+                                    refetchedData.push(data.daily);
+                                }
+                            }
+                        } catch (e) {
+                            console.error('Error parsing JSON chunk:', e, 'Line:', line);
+                        }
+                    }
+                }
+            }
+
+            // Process any remaining data in buffer
+            if (buffer.trim()) {
+                try {
+                    const data = JSON.parse(buffer);
+                    if (data.success && data.daily) {
+                        refetchedData.push(data.daily);
+                    }
+                } catch (e) {
+                    console.error('Error parsing final buffer:', e);
+                }
+            }
+
+            // Update the data array with refetched values
+            setData((prevData) => {
+                const updatedData = [...prevData];
+                refetchedData.forEach((refetched) => {
+                    const index = updatedData.findIndex((d) => d.date === refetched.date);
+                    if (index !== -1 && refetched.success) {
+                        updatedData[index] = {
+                            date: refetched.date,
+                            production: refetched.production_kwh || 0,
+                            load: refetched.load_kwh || 0,
+                            saved: Math.min(refetched.production_kwh || 0, refetched.load_kwh || 0),
+                            feeded: Math.max(0, (refetched.production_kwh || 0) - (refetched.load_kwh || 0)),
+                            isNull: false,
+                        };
+                    }
+                });
+                return updatedData;
+            });
+
+            // Update totals
+            const successfulRefetches = refetchedData.filter((d) => d.success);
+            if (successfulRefetches.length > 0) {
+                const newProduction = successfulRefetches.reduce((sum, d) => sum + (d.production_kwh || 0), 0);
+                const newLoad = successfulRefetches.reduce((sum, d) => sum + (d.load_kwh || 0), 0);
+
+                setTotals((prev) => {
+                    const currentProd = parseFloat(prev.production) || 0;
+                    const currentLoad = parseFloat(prev.load) || 0;
+                    const saved = Math.min(currentProd + newProduction, currentLoad + newLoad);
+                    const feeded = Math.max(0, (currentProd + newProduction) - (currentLoad + newLoad));
+
+                    return {
+                        production: (currentProd + newProduction).toFixed(2),
+                        load: (currentLoad + newLoad).toFixed(2),
+                        saved: saved.toFixed(2),
+                        feeded: feeded.toFixed(2),
+                    };
+                });
+            }
+
+            // Update missing dates - remove successfully refetched dates
+            const stillMissing = missingDates.filter((date) => {
+                const refetched = refetchedData.find((d) => d.date === date);
+                return !refetched || !refetched.success;
+            });
+            setMissingDates(stillMissing);
+
+            const successCount = successfulRefetches.length;
+            const failCount = refetchedData.length - successCount;
+
+            if (successCount > 0) {
+                toast.success(`Successfully refetched ${successCount} day(s)`);
+            }
+            if (failCount > 0) {
+                toast.warning(`Failed to refetch ${failCount} day(s)`);
+            }
+
+            console.log('✅ Refetch completed:', { success: successCount, failed: failCount });
+
+        } catch (err) {
+            console.error("❌ Error refetching missing dates:", err);
+            setisError(err.message || 'Error refetching data');
+            toast.error("Error refetching data: " + (err.message || 'Unknown error'));
+        } finally {
+            setIsRefetching(false);
+            setRefetchProgress(0);
         }
     };
 
@@ -392,9 +546,41 @@ const MonthlyStats = ({ darkMode, themeColor, themeColors }) => {
                         </Button>
                     </Box>
                     {missingDates.length > 0 && (
-                        <Typography variant="body2" color="error" sx={{ mb: 2, p: 2, background: 'rgba(244, 67, 54, 0.1)', borderRadius: 2 }}>
-                            ⚠️ Missing data for: {missingDates.join(", ")}
-                        </Typography>
+                        <Box sx={{ mb: 2, p: 2, background: 'rgba(244, 67, 54, 0.1)', borderRadius: 2 }}>
+                            <Typography variant="body2" color="error" sx={{ mb: 1 }}>
+                                ⚠️ Missing data for: {missingDates.join(", ")}
+                            </Typography>
+                            <Button
+                                variant="contained"
+                                color="warning"
+                                onClick={refetchMissingDays}
+                                disabled={isRefetching || isLoading}
+                                startIcon={<Refresh />}
+                                sx={{
+                                    mt: 1,
+                                    borderRadius: 2,
+                                    textTransform: 'none',
+                                    fontWeight: 600,
+                                }}
+                            >
+                                {isRefetching ? `Refetching... ${refetchProgress.toFixed(0)}%` : `Refetch Missing Days (${missingDates.length})`}
+                            </Button>
+                            {isRefetching && (
+                                <Box sx={{ width: '100%', mt: 2 }}>
+                                    <LinearProgress
+                                        variant="determinate"
+                                        value={refetchProgress}
+                                        sx={{
+                                            height: 8,
+                                            borderRadius: 4,
+                                            '& .MuiLinearProgress-bar': {
+                                                borderRadius: 4,
+                                            }
+                                        }}
+                                    />
+                                </Box>
+                            )}
+                        </Box>
                     )}
                     {isError && (
                         <Typography variant="body2" color="error" sx={{ mb: 2, p: 2, background: 'rgba(244, 67, 54, 0.1)', borderRadius: 2 }}>
@@ -482,4 +668,3 @@ const MonthlyStats = ({ darkMode, themeColor, themeColors }) => {
 };
 
 export default MonthlyStats;
-

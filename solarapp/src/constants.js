@@ -25,6 +25,7 @@ export const API_ENDPOINTS = {
     controlOutputPriority: () => `${API_BASE_URL}/control/output-priority`,
     controlLCDAutoReturn: () => `${API_BASE_URL}/control/lcd-auto-return`,
     controlSystemSettings: () => `${API_BASE_URL}/control/system-settings`,
+    refetchMissingDates: () => `${API_BASE_URL}/stats-range/refetch`,
     
     // NEW: System Health & Monitoring
     systemHealth: () => `${API_BASE_URL}/system/health`,
